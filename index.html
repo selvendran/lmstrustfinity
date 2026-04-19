@@ -4,24 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zensible Leave Manager</title>
-  <!-- React and Recharts from CDN -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- React + Recharts via CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/recharts@2.8.0/umd/Recharts.js"></script>
-  <!-- Babel for JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    /* Your existing styles will be embedded in the component */
     * { box-sizing: border-box; margin: 0; }
     body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; }
+    /* Include all the inline styles from the React app (the S object) as CSS classes for performance */
+    .card { background: #fff; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 4px rgba(0,0,0,0.08); border: 1px solid #f1f5f9; }
+    /* ... etc ... */
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    // --- PASTE THE ENTIRE APP CODE HERE (WITHOUT import/export) ---
-    // I'll provide a ready-to-paste version that works in this environment.
-    // Since the code is huge, I'll give you the transformed version.
+    // The entire App component code goes here, with a few modifications:
+    // 1. Remove import statements (React, Recharts are global).
+    // 2. Replace `export default App;` with `ReactDOM.createRoot(...).render(<App />);`
+    // 3. Replace localStorage calls with correct syntax.
+
+    const { useState, useEffect } = React;
+    const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer, Legend } = Recharts;
+
+    // --- Paste the rest of the code (LEAVE_TYPES, DEMO_USERS, etc.) here ---
+    // ...
+
+    // At the very end:
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
   </script>
 </body>
 </html>
