@@ -235,7 +235,6 @@ function EmployeeView({tab,user,requests,holidays,calYear,calMonth,setCalYear,se
 
   if(tab==="dashboard") return (
     <div style={{display:"grid",gridTemplateColumns:"minmax(200px,1fr) minmax(300px,2fr) minmax(200px,1fr)",gap:16,alignItems:"start"}}>
-      {/* Leave Balances */}
       <div style={S.card}>
         <h3 style={{fontSize:14,fontWeight:800,color:"#0f172a",margin:"0 0 14px"}}>Leave Balances</h3>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -253,12 +252,10 @@ function EmployeeView({tab,user,requests,holidays,calYear,calMonth,setCalYear,se
           })}
         </div>
       </div>
-      {/* Calendar */}
       <div style={S.card}>
         <h3 style={{fontSize:14,fontWeight:800,color:"#0f172a",margin:"0 0 14px"}}>Holiday Calendar 2026 (Karnataka)</h3>
         <Calendar year={calYear} month={calMonth} setYear={setCalYear} setMonth={setCalMonth} holidays={holidays} getLeaves={getLeaves}/>
       </div>
-      {/* Apply & Recent */}
       <div style={{display:"flex",flexDirection:"column",gap:14}}>
         <div style={S.card}>
           <h3 style={{fontSize:14,fontWeight:800,color:"#0f172a",margin:"0 0 14px"}}>Apply for Leave</h3>
@@ -375,7 +372,6 @@ function ManagerView({tab,requests,onUpdate,holidays,calYear,calMonth,setCalYear
         ))}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1.6fr 1fr",gap:14}}>
-        {/* Pending */}
         <div style={S.card}>
           <h3 style={{fontSize:14,fontWeight:800,color:"#0f172a",margin:"0 0 14px"}}>Pending Leave Requests</h3>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -399,12 +395,10 @@ function ManagerView({tab,requests,onUpdate,holidays,calYear,calMonth,setCalYear
             ))}
           </div>
         </div>
-        {/* Calendar */}
         <div style={S.card}>
           <h3 style={{fontSize:14,fontWeight:800,color:"#0f172a",margin:"0 0 14px"}}>Team Leave Calendar</h3>
           <Calendar year={calYear} month={calMonth} setYear={setCalYear} setMonth={setCalMonth} holidays={holidays} getLeaves={getLeaves}/>
         </div>
-        {/* Alerts */}
         <div style={{display:"flex",flexDirection:"column",gap:14}}>
           <div style={S.card}>
             <h3 style={{fontSize:14,fontWeight:800,color:"#0f172a",margin:"0 0 12px"}}>Notifications & Alerts</h3>
@@ -833,7 +827,7 @@ function ReportsView({tab,requests}) {
           <div style={{padding:14,border:"1px solid #e2e8f0",borderRadius:10}}>
             <h4 style={{fontSize:12,fontWeight:800,color:"#374151",margin:"0 0 10px"}}>Projected Leave Distribution 2027</h4>
             <ResponsiveContainer width="100%" height={130}>
-              <PieChart><Pie data={[{name:"Earned",value:42,color:"#2563eb"},{name:"Sick",value:20,color:"#d97706"},{name:"Mat./Pat.",value:18,color:"#7c3aed"},{name:"LWP",value:20,color:"#dc2626"}]} cx="50%" cy="50%" innerRadius={35} outerRadius:60 dataKey="value">{[{color:"#2563eb"},{color:"#d97706"},{color:"#7c3aed"},{color:"#dc2626"}].map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>`${v}%`}/></PieChart>
+              <PieChart><Pie data={[{name:"Earned",value:42,color:"#2563eb"},{name:"Sick",value:20,color:"#d97706"},{name:"Mat./Pat.",value:18,color:"#7c3aed"},{name:"LWP",value:20,color:"#dc2626"}]} cx="50%" cy="50%" innerRadius={35} outerRadius={60} dataKey="value">{[{color:"#2563eb"},{color:"#d97706"},{color:"#7c3aed"},{color:"#dc2626"}].map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>`${v}%`}/></PieChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -858,110 +852,222 @@ function ReportsView({tab,requests}) {
 export default function App() {
   const [user,    setUser]     = useState(null);
   const [tab,     setTab]      = useState("dashboard");
-  const [requests,setRequests] = useState(INITIAL_REQUESTS);
-  const [holidays,setHolidays] = useState(INITIAL_HOLIDAYS);
+  const [requests,setRequests] = useState([]);
+  const [holidays,setHolidays] = useState([]);
   const [calYear, setCalYear]  = useState(2026);
   const [calMonth,setCalMonth] = useState(0);
-  const [modal,   setModal]    = useState(null); // "apply-leave" | "add-holiday"
+  const [modal,   setModal]    = useState(null);
   const [toast,   setToast]    = useState(null);
   const [loading, setLoading]  = useState(true);
   const [newLeave,   setNewLeave]   = useState({type:"earned",start:"",end:"",reason:""});
   const [newHoliday, setNewHoliday] = useState({name:"",date:"",type:"national"});
 
+  // Safe localStorage getter
+  const safeGet = (key, defaultValue) => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : defaultValue;
+    } catch (e) {
+      console.error("Error reading from localStorage:", e);
+      return defaultValue;
+    }
+  };
+
+  // Safe localStorage setter
+  const safeSet = (key, value) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.error("Error writing to localStorage:", e);
+    }
+  };
+
   // Load from storage
-  useEffect(()=>{
-    (async()=>{
-      try {
-        const r = await localStorage.getItem(“lms_requests");
-        if(r) setRequests(JSON.parse(r.value));
-        const h = await localStorage.getItem"lms_holidays");
-        if(h) setHolidays(JSON.parse(h.value));
-        const u = await localStorage.getItem("lms_user");
-        if(u) setUser(JSON.parse(u.value));
-      } catch(e) {}
-      setLoading(false);
-    })();
-  },[]);
+  useEffect(() => {
+    setRequests(safeGet("lms_requests", INITIAL_REQUESTS));
+    setHolidays(safeGet("lms_holidays", INITIAL_HOLIDAYS));
+    const savedUser = safeGet("lms_user", null);
+    if (savedUser) setUser(savedUser);
+    setLoading(false);
+  }, []);
 
-  const persist = async (key,val) => { try { await localStorage.setItem(key,JSON.stringify(val)); } catch(e){} };
+  const persist = (key, val) => safeSet(key, val);
 
-  const showToast = (msg,type="success") => { setToast({msg,type}); setTimeout(()=>setToast(null),3000); };
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
-  const login  = async(u) => { setUser(u); setTab("dashboard"); persist("lms_user",u); };
-  const logout = async()  => { setUser(null); try{ await localStorage.removeItem("lms_user"); }catch(e){} };
+  const login = (u) => {
+    setUser(u);
+    setTab("dashboard");
+    persist("lms_user", u);
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("lms_user");
+  };
 
   const submitLeave = () => {
-    if(!newLeave.start||!newLeave.end||!newLeave.reason.trim()){ showToast("Please fill all fields","error"); return; }
-    const s=new Date(newLeave.start), e=new Date(newLeave.end);
-    if(e<s){ showToast("End date must be after start date","error"); return; }
-    const days=Math.ceil((e-s)/86400000)+1;
-    const req={id:Date.now(),empId:user.id,empName:user.name,dept:user.dept||"Engineering",
-      type:newLeave.type,start:newLeave.start,end:newLeave.end,days,status:"pending",reason:newLeave.reason,applied:new Date().toISOString().split("T")[0]};
-    const updated=[...requests,req];
-    setRequests(updated); persist("lms_requests",updated);
-    setModal(null); setNewLeave({type:"earned",start:"",end:"",reason:""});
+    if (!newLeave.start || !newLeave.end || !newLeave.reason.trim()) {
+      showToast("Please fill all fields", "error");
+      return;
+    }
+    const s = new Date(newLeave.start);
+    const e = new Date(newLeave.end);
+    if (e < s) {
+      showToast("End date must be after start date", "error");
+      return;
+    }
+    const days = Math.ceil((e - s) / 86400000) + 1;
+    const req = {
+      id: Date.now(),
+      empId: user.id,
+      empName: user.name,
+      dept: user.dept || "Engineering",
+      type: newLeave.type,
+      start: newLeave.start,
+      end: newLeave.end,
+      days,
+      status: "pending",
+      reason: newLeave.reason,
+      applied: new Date().toISOString().split("T")[0],
+    };
+    const updated = [...requests, req];
+    setRequests(updated);
+    persist("lms_requests", updated);
+    setModal(null);
+    setNewLeave({ type: "earned", start: "", end: "", reason: "" });
     showToast("✅ Leave applied successfully!");
   };
 
-  const updateStatus = (id,status) => {
-    const updated=requests.map(r=>r.id===id?{...r,status}:r);
-    setRequests(updated); persist("lms_requests",updated);
-    showToast(status==="approved"?"✅ Leave Approved!":"❌ Leave Rejected!");
+  const updateStatus = (id, status) => {
+    const updated = requests.map((r) => (r.id === id ? { ...r, status } : r));
+    setRequests(updated);
+    persist("lms_requests", updated);
+    showToast(status === "approved" ? "✅ Leave Approved!" : "❌ Leave Rejected!");
   };
 
   const addHoliday = () => {
-    if(!newHoliday.name||!newHoliday.date){ showToast("Please fill all fields","error"); return; }
-    const updated=[...holidays,{...newHoliday,id:Date.now()}];
-    setHolidays(updated); persist("lms_holidays",updated);
-    setModal(null); setNewHoliday({name:"",date:"",type:"national"});
+    if (!newHoliday.name || !newHoliday.date) {
+      showToast("Please fill all fields", "error");
+      return;
+    }
+    const updated = [...holidays, { ...newHoliday, id: Date.now() }];
+    setHolidays(updated);
+    persist("lms_holidays", updated);
+    setModal(null);
+    setNewHoliday({ name: "", date: "", type: "national" });
     showToast("✅ Holiday added!");
   };
 
   const deleteHoliday = (id) => {
-    const updated=holidays.filter(h=>h.id!==id);
-    setHolidays(updated); persist("lms_holidays",updated);
+    const updated = holidays.filter((h) => h.id !== id);
+    setHolidays(updated);
+    persist("lms_holidays", updated);
     showToast("Holiday deleted");
   };
 
-  const getLeaves = (y,m,d) => requests.filter(r=>{
-    const s=new Date(r.start),e=new Date(r.end),check=new Date(y,m,d);
-    return r.status==="approved"&&check>=s&&check<=e;
-  });
+  const getLeaves = (y, m, d) =>
+    requests.filter((r) => {
+      const s = new Date(r.start);
+      const e = new Date(r.end);
+      const check = new Date(y, m, d);
+      return r.status === "approved" && check >= s && check <= e;
+    });
 
-  if(loading) return (
-    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#f1f5f9",fontFamily:"system-ui,sans-serif"}}>
-      <div style={{textAlign:"center"}}><div style={{fontSize:48,marginBottom:12}}>⏳</div><p style={{color:"#64748b",fontSize:16,fontWeight:600}}>Loading Leave Management System...</p></div>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", fontFamily: "system-ui,sans-serif" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>⏳</div>
+          <p style={{ color: "#64748b", fontSize: 16, fontWeight: 600 }}>Loading Leave Management System...</p>
+        </div>
+      </div>
+    );
+  }
 
-  if(!user) return <LoginScreen onLogin={login}/>;
+  if (!user) return <LoginScreen onLogin={login} />;
 
-  const tabs = ROLE_TABS[user.role]||[];
+  const tabs = ROLE_TABS[user.role] || [];
 
   return (
-    <div style={{minHeight:"100vh",background:"#f1f5f9",fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
+    <div style={{ minHeight: "100vh", background: "#f1f5f9", fontFamily: "'Segoe UI',system-ui,sans-serif" }}>
       {/* Toast */}
-      {toast&&<div style={{position:"fixed",top:16,right:16,zIndex:1000,padding:"12px 24px",borderRadius:10,background:toast.type==="error"?"#dc2626":"#16a34a",color:"#fff",fontWeight:700,fontSize:14,boxShadow:"0 8px 24px rgba(0,0,0,0.2)",animation:"fadeIn 0.2s"}}>{toast.msg}</div>}
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            top: 16,
+            right: 16,
+            zIndex: 1000,
+            padding: "12px 24px",
+            borderRadius: 10,
+            background: toast.type === "error" ? "#dc2626" : "#16a34a",
+            color: "#fff",
+            fontWeight: 700,
+            fontSize: 14,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+            animation: "fadeIn 0.2s",
+          }}
+        >
+          {toast.msg}
+        </div>
+      )}
 
       {/* Header */}
-      <div style={{background:"#fff",borderBottom:"1px solid #e2e8f0",boxShadow:"0 1px 4px rgba(0,0,0,0.06)",position:"sticky",top:0,zIndex:100}}>
-        <div style={{padding:"12px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",maxWidth:1200,margin:"0 auto"}}>
+      <div style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", position: "sticky", top: 0, zIndex: 100 }}>
+        <div style={{ padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 1200, margin: "0 auto" }}>
           <div>
-            <p style={{fontSize:11,color:"#64748b",fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",margin:0}}>Leave Management System</p>
-            <p style={{fontSize:16,fontWeight:800,color:"#0f172a",margin:"2px 0 0"}}>{DASH_TITLE[user.role]}</p>
+            <p style={{ fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", margin: 0 }}>Leave Management System</p>
+            <p style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: "2px 0 0" }}>{DASH_TITLE[user.role]}</p>
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:14}}>
-            <div style={{textAlign:"right"}}>
-              <p style={{fontSize:13,fontWeight:700,color:"#0f172a",margin:0}}>Welcome, {user.name}</p>
-              <p style={{fontSize:11,color:"#64748b",margin:"2px 0 0",textTransform:"capitalize"}}>{user.role} • {user.dept}</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ textAlign: "right" }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0 }}>Welcome, {user.name}</p>
+              <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0", textTransform: "capitalize" }}>
+                {user.role} • {user.dept}
+              </p>
             </div>
-            <Avatar name={user.name} color={ROLE_COLORS[user.role]} size={40}/>
-            <button onClick={logout} style={{fontSize:12,color:"#dc2626",fontWeight:700,border:"1px solid #fca5a5",padding:"5px 14px",borderRadius:8,background:"#fff5f5",cursor:"pointer",fontFamily:"inherit"}}>Logout</button>
+            <Avatar name={user.name} color={ROLE_COLORS[user.role]} size={40} />
+            <button
+              onClick={logout}
+              style={{
+                fontSize: 12,
+                color: "#dc2626",
+                fontWeight: 700,
+                border: "1px solid #fca5a5",
+                padding: "5px 14px",
+                borderRadius: 8,
+                background: "#fff5f5",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              Logout
+            </button>
           </div>
         </div>
-        <div style={{padding:"0 24px",maxWidth:1200,margin:"0 auto",display:"flex",gap:4,overflowX:"auto",borderTop:"1px solid #f1f5f9"}}>
-          {tabs.map(t=>(
-            <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"10px 16px",fontSize:13,fontWeight:700,whiteSpace:"nowrap",border:"none",borderBottom:tab===t.id?"2.5px solid #2563eb":"2.5px solid transparent",color:tab===t.id?"#2563eb":"#64748b",background:"transparent",cursor:"pointer",transition:"all 0.15s",fontFamily:"inherit"}}>
+        <div style={{ padding: "0 24px", maxWidth: 1200, margin: "0 auto", display: "flex", gap: 4, overflowX: "auto", borderTop: "1px solid #f1f5f9" }}>
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{
+                padding: "10px 16px",
+                fontSize: 13,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+                border: "none",
+                borderBottom: tab === t.id ? "2.5px solid #2563eb" : "2.5px solid transparent",
+                color: tab === t.id ? "#2563eb" : "#64748b",
+                background: "transparent",
+                cursor: "pointer",
+                transition: "all 0.15s",
+                fontFamily: "inherit",
+              }}
+            >
               {t.label}
             </button>
           ))}
@@ -969,59 +1075,129 @@ export default function App() {
       </div>
 
       {/* Content */}
-      <div style={{maxWidth:1200,margin:"0 auto",padding:24}}>
-        {user.role==="employee" && <EmployeeView tab={tab} user={user} requests={requests} holidays={holidays} calYear={calYear} calMonth={calMonth} setCalYear={setCalYear} setCalMonth={setCalMonth} getLeaves={getLeaves} onApplyLeave={()=>setModal("apply-leave")}/>}
-        {user.role==="manager"  && <ManagerView  tab={tab} requests={requests} onUpdate={updateStatus} holidays={holidays} calYear={calYear} calMonth={calMonth} setCalYear={setCalYear} setCalMonth={setCalMonth} getLeaves={getLeaves}/>}
-        {user.role==="hr"       && <HRView       tab={tab} requests={requests} holidays={holidays} onAddHoliday={()=>setModal("add-holiday")} onDeleteHoliday={deleteHoliday}/>}
-        {user.role==="admin"    && <AdminView     tab={tab} holidays={holidays} onAddHoliday={()=>setModal("add-holiday")} onDeleteHoliday={deleteHoliday} showNotification={showToast}/>}
-        {user.role==="reports"  && <ReportsView   tab={tab} requests={requests}/>}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: 24 }}>
+        {user.role === "employee" && (
+          <EmployeeView
+            tab={tab}
+            user={user}
+            requests={requests}
+            holidays={holidays}
+            calYear={calYear}
+            calMonth={calMonth}
+            setCalYear={setCalYear}
+            setCalMonth={setCalMonth}
+            getLeaves={getLeaves}
+            onApplyLeave={() => setModal("apply-leave")}
+          />
+        )}
+        {user.role === "manager" && (
+          <ManagerView
+            tab={tab}
+            requests={requests}
+            onUpdate={updateStatus}
+            holidays={holidays}
+            calYear={calYear}
+            calMonth={calMonth}
+            setCalYear={setCalYear}
+            setCalMonth={setCalMonth}
+            getLeaves={getLeaves}
+          />
+        )}
+        {user.role === "hr" && (
+          <HRView
+            tab={tab}
+            requests={requests}
+            holidays={holidays}
+            onAddHoliday={() => setModal("add-holiday")}
+            onDeleteHoliday={deleteHoliday}
+          />
+        )}
+        {user.role === "admin" && (
+          <AdminView
+            tab={tab}
+            holidays={holidays}
+            onAddHoliday={() => setModal("add-holiday")}
+            onDeleteHoliday={deleteHoliday}
+            showNotification={showToast}
+          />
+        )}
+        {user.role === "reports" && <ReportsView tab={tab} requests={requests} />}
       </div>
 
       {/* Apply Leave Modal */}
-      {modal==="apply-leave"&&(
-        <Modal title="Apply for Leave" onClose={()=>setModal(null)}>
-          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      {modal === "apply-leave" && (
+        <Modal title="Apply for Leave" onClose={() => setModal(null)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <label style={S.label}>Leave Type</label>
-              <select value={newLeave.type} onChange={e=>setNewLeave({...newLeave,type:e.target.value})} style={S.input}>
-                {LEAVE_TYPES.map(lt=><option key={lt.id} value={lt.id}>{lt.name} ({lt.total} {lt.unit})</option>)}
+              <select value={newLeave.type} onChange={(e) => setNewLeave({ ...newLeave, type: e.target.value })} style={S.input}>
+                {LEAVE_TYPES.map((lt) => (
+                  <option key={lt.id} value={lt.id}>
+                    {lt.name} ({lt.total} {lt.unit})
+                  </option>
+                ))}
               </select>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-              <div><label style={S.label}>Start Date</label><input type="date" value={newLeave.start} onChange={e=>setNewLeave({...newLeave,start:e.target.value})} style={S.input}/></div>
-              <div><label style={S.label}>End Date</label><input type="date" value={newLeave.end} onChange={e=>setNewLeave({...newLeave,end:e.target.value})} style={S.input}/></div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div>
+                <label style={S.label}>Start Date</label>
+                <input type="date" value={newLeave.start} onChange={(e) => setNewLeave({ ...newLeave, start: e.target.value })} style={S.input} />
+              </div>
+              <div>
+                <label style={S.label}>End Date</label>
+                <input type="date" value={newLeave.end} onChange={(e) => setNewLeave({ ...newLeave, end: e.target.value })} style={S.input} />
+              </div>
             </div>
-            <div><label style={S.label}>Reason for Leave</label><textarea value={newLeave.reason} onChange={e=>setNewLeave({...newLeave,reason:e.target.value})} rows={3} placeholder="Please describe the reason..." style={S.textarea}/></div>
-            {newLeave.start&&newLeave.end&&new Date(newLeave.end)>=new Date(newLeave.start)&&(
-              <div style={{padding:"10px 14px",background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:8}}>
-                <p style={{fontSize:13,color:"#1d4ed8",fontWeight:700,margin:0}}>📋 {Math.ceil((new Date(newLeave.end)-new Date(newLeave.start))/86400000)+1} days of leave requested</p>
+            <div>
+              <label style={S.label}>Reason for Leave</label>
+              <textarea value={newLeave.reason} onChange={(e) => setNewLeave({ ...newLeave, reason: e.target.value })} rows={3} placeholder="Please describe the reason..." style={S.textarea} />
+            </div>
+            {newLeave.start && newLeave.end && new Date(newLeave.end) >= new Date(newLeave.start) && (
+              <div style={{ padding: "10px 14px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8 }}>
+                <p style={{ fontSize: 13, color: "#1d4ed8", fontWeight: 700, margin: 0 }}>
+                  📋 {Math.ceil((new Date(newLeave.end) - new Date(newLeave.start)) / 86400000) + 1} days of leave requested
+                </p>
               </div>
             )}
-            <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:4}}>
-              <button onClick={()=>setModal(null)} style={S.btnGray}>Cancel</button>
-              <button onClick={submitLeave} style={S.btnBlue}>Submit Leave Request</button>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 4 }}>
+              <button onClick={() => setModal(null)} style={S.btnGray}>
+                Cancel
+              </button>
+              <button onClick={submitLeave} style={S.btnBlue}>
+                Submit Leave Request
+              </button>
             </div>
           </div>
         </Modal>
       )}
 
       {/* Add Holiday Modal */}
-      {modal==="add-holiday"&&(
-        <Modal title="Add New Holiday" onClose={()=>setModal(null)}>
-          <div style={{display:"flex",flexDirection:"column",gap:14}}>
-            <div><label style={S.label}>Holiday Name</label><input type="text" value={newHoliday.name} onChange={e=>setNewHoliday({...newHoliday,name:e.target.value})} placeholder="e.g., Diwali" style={S.input}/></div>
-            <div><label style={S.label}>Date</label><input type="date" value={newHoliday.date} onChange={e=>setNewHoliday({...newHoliday,date:e.target.value})} style={S.input}/></div>
+      {modal === "add-holiday" && (
+        <Modal title="Add New Holiday" onClose={() => setModal(null)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <label style={S.label}>Holiday Name</label>
+              <input type="text" value={newHoliday.name} onChange={(e) => setNewHoliday({ ...newHoliday, name: e.target.value })} placeholder="e.g., Diwali" style={S.input} />
+            </div>
+            <div>
+              <label style={S.label}>Date</label>
+              <input type="date" value={newHoliday.date} onChange={(e) => setNewHoliday({ ...newHoliday, date: e.target.value })} style={S.input} />
+            </div>
             <div>
               <label style={S.label}>Type</label>
-              <select value={newHoliday.type} onChange={e=>setNewHoliday({...newHoliday,type:e.target.value})} style={S.input}>
+              <select value={newHoliday.type} onChange={(e) => setNewHoliday({ ...newHoliday, type: e.target.value })} style={S.input}>
                 <option value="national">National Holiday</option>
                 <option value="state">State Holiday</option>
                 <option value="optional">Optional Holiday</option>
               </select>
             </div>
-            <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:4}}>
-              <button onClick={()=>setModal(null)} style={S.btnGray}>Cancel</button>
-              <button onClick={addHoliday} style={S.btnBlue}>Add Holiday</button>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 4 }}>
+              <button onClick={() => setModal(null)} style={S.btnGray}>
+                Cancel
+              </button>
+              <button onClick={addHoliday} style={S.btnBlue}>
+                Add Holiday
+              </button>
             </div>
           </div>
         </Modal>
